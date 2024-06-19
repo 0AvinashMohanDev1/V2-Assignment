@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #nav-path button {
+            margin-right: 5px;
+        }
+        #nav-path{
+            background-color: cadetblue;
+        }
+        .hidden {
+            display: none;
+        }
+        #division-2 .item {
+            display: flex;
+            align-items: center;
+        }
+        #division-2 .item input {
+            margin-right: 10px;
+        }
+        .folder, .file {
+            cursor: pointer;
+        }
+        #containar{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #nav-path,#nav-2{
+            border: 1mm solid lightskyblue;
+            width: 700px;
+        }
+        #nav-2{
+            display: flex;
+            justify-content: end;
+            background-color: lightskyblue;
+        }
+        th{
+            background-color: lightskyblue;
+        }
+        #division-1,#division-2{
+            border: 1mm solid lightskyblue;
+            width: 700px;
+            height: 200px;
+        }
+        #divisioin-2-nav{
+            display: flex;
+            background:lightskyblue;
+            align-items: center;
+            justify-content: space-between;
+        }
+        #divisioin-2-nav label{
+            padding-bottom: 15px;
+            font-size:20px ;
+            margin-left: 5px;
+        }
+       
+        #division1-table th,
+        #division1-table td {
+            padding: 3px;   
+            text-align: left;
+        }
+        #remove-button{
+        margin-bottom: 10px;
+        margin-right: 5px;
+        
+        }
+        button{
+            margin: 10px 10px ;
+            background-color: #949494; 
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div id="containar">
+        <div id="nav-path">
+            <button id="back-button" class="hidden">Back</button>
+            <!-- path should show like this: home > folder's name > subfolder's name -->
+            <button class="path-segment" onclick="renderFolder('/')" data-path="/">Home</button> 
+            <span id="current-path"></span>
+        </div>
+        <div id="nav-2">
+            <button class="btn">Archive Cleanup</button>
+            <button class="btn">Search</button>
+            <button class="btn">Create new</button>
+        </div>
+        <div id="division-1">
+            <table id="division1-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all"> File/Folder name</th>
+                        <th>Size</th>
+                        <th>Date modified</th>
+                    </tr>
+                </thead>
+                <tbody id="file-list">
+                    <tr>
+                        <td><input type="checkbox" class="file-checkbox" data-name="Music"> <span class="folder" data-path="/Music">Music</span></td>
+                        <td>---</td>
+                        <td>2024/01/01 10:00:00 AM</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="file-checkbox" data-name="Photos"> <span class="folder" data-path="/Photos">Photos</span></td>
+                        <td>---</td>
+                        <td>2024/01/01 10:00:00 AM</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="file-checkbox" data-name="Documents"> <span class="folder" data-path="/Documents">Documents</span></td>
+                        <td>---</td>
+                        <td>2024/01/01 10:00:00 AM</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="file-checkbox" data-name="Shared"> <span class="folder" data-path="/Shared">Shared</span></td>
+                        <td>---</td>
+                        <td>2024/01/01 10:00:00 AM</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="division-2">
+            <div id="divisioin-2-nav">
+                <label>Backupbox</label>
+                <button id="remove-button" class="hidden">Remove</button>
+            </div>
+            <div id="cloned-items"></div>
+        </div>
+    </div>
+    <script>
+        const fileCheckboxes = document.querySelectorAll('.file-checkbox');
+        const selectAllCheckbox = document.getElementById('select-all');
+        const clonedItemsContainer = document.getElementById('cloned-items');
+        const removeButton = document.getElementById('remove-button');
+        const fileList = document.getElementById('file-list');
+        const backButton = document.getElementById('back-button');
+        const currentPath = document.getElementById('current-path');
+
+        const folderStructure = {
+            '/': [
+                { name: 'Music', type: 'folder', path: '/Music' },
+                { name: 'Photos', type: 'folder', path: '/Photos' },
+                { name: 'Documents', type: 'folder', path: '/Documents' },
+                { name: 'Shared', type: 'folder', path: '/Shared' }
+            ],
+            '/Music': [
+                { name: 'song1.mp3', type: 'file', path: '/Music/song1.mp3' },
+                { name: 'song2.mp3', type: 'file', path: '/Music/song2.mp3' }
+            ],
+            '/Photos': [
+                { name: 'vacation.jpg', type: 'file', path: '/Photos/vacation.jpg' },
+                { name: 'birthday.jpg', type: 'file', path: '/Photos/birthday.jpg' }
+            ],
+            '/Documents': [
+                { name: 'resume.pdf', type: 'file', path: '/Documents/resume.pdf' },
+                { name: 'content', type: 'folder', path: '/Documents/content' },
+                { name: 'cover_letter.docx', type: 'file', path: '/Documents/cover_letter.docx' }
+            ],
+            '/Shared': [
+                { name: 'report.xlsx', type: 'file', path: '/Shared/report.xlsx' },
+                { name: 'presentation.pptx', type: 'file', path: '/Shared/presentation.pptx' }
+            ]
+        };
+
+        let currentFolder = '/';
+
+        function renderFolder(folder) {
+            fileList.innerHTML = '';
+            folderStructure[folder].forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" class="file-checkbox" data-name="${item.name}"> ${item.type === 'folder' ? `<span class="folder" data-path="${item.path}">${item.name}</span>` : item.name}</td>
+                    <td>---</td>
+                    <td>2024/01/01 10:00:00 AM</td>
+                `;
+                fileList.appendChild(row);
+            });
+
+            const checkboxes = document.querySelectorAll('.file-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateState);
+            });
+
+            const folders = document.querySelectorAll('.folder');
+            folders.forEach((folder) => {
+                folder.addEventListener('click', function() {
+                    navigateToFolder(folder.dataset.path);
+                });
+            });
+
+            updatePath(folder)
+        }
+
+        function navigateToFolder(path) {
+            currentFolder = path;
+            renderFolder(path);
+            updatePath(path);
+        }
+
+        function updatePath(path) {
+            const pathArray = path.split('/').filter(p => p);
+            currentPath.innerHTML = '';
+            pathArray.forEach((segment, index) => {
+                const fullPath = '/' + pathArray.slice(0, index + 1).join('/');
+                const button = document.createElement('button');
+                button.classList.add('path-segment');
+                button.dataset.path = fullPath;
+                button.innerText = segment;
+                button.addEventListener('click', function() {
+                    navigateToFolder(fullPath);
+                });
+                currentPath.appendChild(button);
+            });
+            backButton.classList.toggle('hidden', pathArray.length === 0);
+        }
+
+        backButton.addEventListener('click', function() {
+            const pathArray = currentFolder.split('/').filter(p => p);
+            pathArray.pop();
+            navigateToFolder('/' + pathArray.join('/'));
+        });
+
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = selectAllCheckbox.checked;
+            const currentCheckboxes = document.querySelectorAll('.file-checkbox');
+            currentCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateState();
+        });
+
+        function updateState() {
+            const currentCheckboxes = document.querySelectorAll('.file-checkbox');
+            console.log(181,currentCheckboxes);
+            const allChecked = [...currentCheckboxes].every(checkbox => checkbox.checked);
+            const someChecked = [...currentCheckboxes].some(checkbox => checkbox.checked);
+            console.log(184,allChecked);
+            console.log(185,someChecked);
+            if (allChecked) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (someChecked) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+
+            updateClonedItems();
+        }
+
+        function updateClonedItems() {
+            clonedItemsContainer.innerHTML = '';
+            const checkedItems = [...document.querySelectorAll('.file-checkbox')].filter(checkbox => checkbox.checked);
+
+            checkedItems.forEach(item => {
+                const div = document.createElement('div');
+                div.classList.add('item');
+                div.innerHTML = `<input type="checkbox" data-name="${item.dataset.name}" class="cloned-checkbox" > ${item.dataset.name}`;
+                clonedItemsContainer.appendChild(div);
+            });
+
+            removeButton.classList.toggle('hidden', checkedItems.length === 0);
+
+            const clonedCheckboxes = document.querySelectorAll('.cloned-checkbox');
+            clonedCheckboxes.forEach((checkbox,id) => {
+                // console.log(checkbox,id);
+                checkbox.addEventListener('change', function() {
+                    checkbox.checked=checked;
+
+                    const originalCheckbox = document.querySelector(`.file-checkbox[data-name="${checkbox.dataset.name}"]`);
+                    originalCheckbox.checked = checkbox.checked;
+                    updateState();
+                });
+            });
+        }
+
+        removeButton.addEventListener('click', function() {
+            const clonedCheckboxes = document.querySelectorAll('.cloned-checkbox');
+            clonedCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    const originalCheckbox = document.querySelector(`.file-checkbox[data-name="${checkbox.dataset.name}"]`);
+                    if (originalCheckbox) {
+                        originalCheckbox.checked=false;
+                    }
+                    checkbox.closest('.item').remove();
+                }
+            });
+            updateState();
+        });
+
+        renderFolder('/');
+    </script>
+</body>
+</html>
